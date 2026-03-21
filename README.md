@@ -1,0 +1,1 @@
+# macos-menu-stats

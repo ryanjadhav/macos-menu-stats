@@ -164,20 +164,23 @@ final class DiskReader: BaseReader<DiskStats> {
         let count = proc_listallpids(&pids, Int32(pids.count * MemoryLayout<Int32>.size))
         guard count > 0 else { return [] }
 
+        // Heap-allocate to avoid stack-canary corruption in optimised builds:
+        // proc_pid_rusage writes through a void** and the kernel may write more
+        // bytes than the Swift struct definition expects, overflowing a stack slot.
+        let ruinfo = UnsafeMutablePointer<rusage_info_v4>.allocate(capacity: 1)
+        defer { ruinfo.deallocate() }
+
         var results: [DiskProcess] = []
         for i in 0 ..< Int(count) {
             let pid = pids[i]
             guard pid > 0 else { continue }
 
-            var ruinfo = rusage_info_v4()
-            let ret: Int32 = withUnsafeMutablePointer(to: &ruinfo) { ptr in
-                var voidPtr: rusage_info_t? = UnsafeMutableRawPointer(ptr)
-                return proc_pid_rusage(pid, RUSAGE_INFO_V4, &voidPtr)
-            }
-            guard ret == 0 else { continue }
+            ruinfo.initialize(to: rusage_info_v4())
+            var buffer: rusage_info_t? = UnsafeMutableRawPointer(ruinfo)
+            guard proc_pid_rusage(pid, RUSAGE_INFO_V4, &buffer) == 0 else { continue }
 
-            let read  = ruinfo.ri_diskio_bytesread
-            let write = ruinfo.ri_diskio_byteswritten
+            let read  = ruinfo.pointee.ri_diskio_bytesread
+            let write = ruinfo.pointee.ri_diskio_byteswritten
             guard read + write > 0 else { continue }
 
             var nameBuffer = [CChar](repeating: 0, count: Int(MAXCOMLEN) + 1)

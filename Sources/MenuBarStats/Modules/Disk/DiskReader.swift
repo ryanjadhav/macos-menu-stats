@@ -159,10 +159,28 @@ final class DiskReader: BaseReader<DiskStats> {
 
     // MARK: - Top processes by disk I/O
 
+    // @inline(never) keeps this stack frame isolated from its callers so the
+    // optimizer cannot merge stack slots across the C boundary calls below.
+    @inline(never)
     private func readTopProcesses() -> [DiskProcess] {
         var pids = [Int32](repeating: 0, count: 4096)
         let count = proc_listallpids(&pids, Int32(pids.count * MemoryLayout<Int32>.size))
         guard count > 0 else { return [] }
+        // proc_listallpids may return the *total* process count even when the
+        // buffer is smaller — cap the iteration to the buffer we actually have.
+        let safeCount = min(Int(count), pids.count)
+
+        // Heap-allocate rusage struct: proc_pid_rusage writes through void** and
+        // the kernel struct may be larger than the SDK definition, overflowing a
+        // stack slot and corrupting the stack canary.
+        let ruinfo = UnsafeMutablePointer<rusage_info_v4>.allocate(capacity: 1)
+        defer { ruinfo.deallocate() }
+
+        // proc_name pulls from pbi_name which is char[2*MAXCOMLEN+1] = 33 bytes;
+        // use a properly-sized heap buffer instead of a tiny Swift Array.
+        let nameCapacity = 256
+        let nameBuf = UnsafeMutablePointer<CChar>.allocate(capacity: nameCapacity)
+        defer { nameBuf.deallocate() }
 
         // Heap-allocate to avoid stack-canary corruption in optimised builds:
         // proc_pid_rusage writes through a void** and the kernel may write more
@@ -171,7 +189,7 @@ final class DiskReader: BaseReader<DiskStats> {
         defer { ruinfo.deallocate() }
 
         var results: [DiskProcess] = []
-        for i in 0 ..< Int(count) {
+        for i in 0 ..< safeCount {
             let pid = pids[i]
             guard pid > 0 else { continue }
 
@@ -183,9 +201,9 @@ final class DiskReader: BaseReader<DiskStats> {
             let write = ruinfo.pointee.ri_diskio_byteswritten
             guard read + write > 0 else { continue }
 
-            var nameBuffer = [CChar](repeating: 0, count: Int(MAXCOMLEN) + 1)
-            proc_name(pid, &nameBuffer, UInt32(nameBuffer.count))
-            let name = String(cString: nameBuffer)
+            nameBuf.initialize(repeating: 0, count: nameCapacity)
+            proc_name(pid, nameBuf, UInt32(nameCapacity))
+            let name = String(cString: nameBuf)
             guard !name.isEmpty else { continue }
 
             results.append(DiskProcess(pid: pid, name: name, readBytes: read, writeBytes: write))

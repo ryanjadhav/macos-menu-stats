@@ -19,6 +19,9 @@ jobs:
       - name: Build
         run: bash build.sh
 
+      - name: Test
+        run: swift test -v
+
       - name: Upload app bundle
         uses: actions/upload-artifact@v4
         with:

@@ -38,7 +38,7 @@ struct NetworkProcess {
 
 // MARK: - Reader
 
-final class NetworkReader: BaseReader<NetworkStats> {
+final class NetworkReader: BaseReader<NetworkStats>, @unchecked Sendable {
     private var prevBytes: [String: (rx: UInt64, tx: UInt64)] = [:]
     private var prevTimestamp = Date()
     private var downloadHistory: [Double] = []

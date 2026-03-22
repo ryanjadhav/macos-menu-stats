@@ -33,19 +33,30 @@ Xcode will resolve the package and show the `MenuBarStats` scheme. Press **Cmd+R
 
 ### With Swift Package Manager (command line)
 
+No Xcode GUI needed — only Xcode Command Line Tools (`xcode-select --install`).
+
+Build and assemble a proper `.app` bundle in one step:
+
+```bash
+bash build.sh
+```
+
+The bundle is placed at:
+
+```
+.build/release/MenuBarStats.app
+```
+
+Open it like any other app:
+
+```bash
+open .build/release/MenuBarStats.app
+```
+
+Or build the raw binary without assembling the bundle:
+
 ```bash
 swift build -c release
-```
-
-The compiled binary will be at:
-
-```
-.build/release/MenuBarStats
-```
-
-Run it directly:
-
-```bash
 .build/release/MenuBarStats
 ```
 
@@ -57,6 +68,10 @@ The app appears only in the menu bar (no Dock icon). To quit, right-click any st
 swift build
 .build/debug/MenuBarStats
 ```
+
+### CI
+
+A GitHub Actions workflow (`.github/workflows/build.yml`) runs `build.sh` on every push and pull request using a macOS 15 runner. The assembled `MenuBarStats.app` is uploaded as a workflow artifact on each successful build.
 
 ## Project Structure
 

@@ -241,14 +241,17 @@ final class NetworkReader: BaseReader<NetworkStats> {
             let pid = pids[i]
             guard pid > 0 else { continue }
 
-            var info = proc_taskinfo()
-            let size = Int32(MemoryLayout<proc_taskinfo>.size)
-            guard proc_pidinfo(pid, PROC_PIDTASKINFO, 0, &info, size) > 0 else { continue }
+            var ruinfo = rusage_info_v4()
+            let ret: Int32 = withUnsafeMutablePointer(to: &ruinfo) { ptr in
+                var voidPtr: rusage_info_t? = UnsafeMutableRawPointer(ptr)
+                return proc_pid_rusage(pid, RUSAGE_INFO_V4, &voidPtr)
+            }
+            guard ret == 0 else { continue }
 
-            // Note: pti_syscalls_unix/mach don't expose network I/O directly.
-            // Using bytes read/written as a proxy (best available without private APIs).
-            let rx = info.pti_diskio_bytesread   // placeholder — see note
-            let tx = info.pti_diskio_byteswritten
+            // Use cumulative disk I/O as a proxy for process activity
+            // (per-process network I/O is not available via public APIs)
+            let rx = ruinfo.ri_diskio_bytesread
+            let tx = ruinfo.ri_diskio_byteswritten
             guard rx + tx > 0 else { continue }
 
             var nameBuffer = [CChar](repeating: 0, count: Int(MAXCOMLEN) + 1)

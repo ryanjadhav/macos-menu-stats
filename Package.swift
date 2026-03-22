@@ -15,6 +15,11 @@ let package = Package(
                 .linkedFramework("CoreFoundation"),
                 .linkedFramework("AppKit")
             ]
+        ),
+        .testTarget(
+            name: "MenuBarStatsTests",
+            dependencies: ["MenuBarStats"],
+            path: "Tests/MenuBarStatsTests"
         )
     ]
 )

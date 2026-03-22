@@ -68,7 +68,7 @@ class BasePopup: NSPanel {
 
 /// Helper to host a SwiftUI view inside the BasePopup.
 final class SwiftUIPopup<Content: View>: BasePopup {
-    private var hostingController: NSHostingController<Content>
+    private var hostingController: NSHostingController<Content>!
 
     init(rootView: Content) {
         let controller = NSHostingController(rootView: rootView)

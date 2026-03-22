@@ -125,7 +125,7 @@ final class SMCKit {
         input.data8 = SMCPacketType.readKey.rawValue
         input.keyInfo.dataSize = UInt32(size)
 
-        var inputSize = MemoryLayout<SMCParamStruct>.size
+        let inputSize = MemoryLayout<SMCParamStruct>.size
         var outputSize = MemoryLayout<SMCParamStruct>.size
 
         let result = IOConnectCallStructMethod(

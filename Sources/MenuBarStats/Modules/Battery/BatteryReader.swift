@@ -66,7 +66,7 @@ final class BatteryReader: BaseReader<BatteryData> {
 
             // Battery health & cycle count from extended attributes
             let health     = (desc[kIOPSBatteryHealthKey] as? String).map { healthToPercent($0) }
-            let cycleCount = desc[kIOPSCycleCountKey] as? Int
+            let cycleCount = desc["CycleCount"] as? Int
 
             // Temperature via SMC
             let temperature = smc.readTemperature(SMCSensorKey.batteryTemp)

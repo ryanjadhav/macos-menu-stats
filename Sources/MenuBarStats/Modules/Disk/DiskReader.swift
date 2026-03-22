@@ -81,9 +81,7 @@ final class DiskReader: BaseReader<DiskStats> {
             let mountPoint = withUnsafeBytes(of: fs.f_mntonname) { ptr -> String in
                 String(cString: ptr.bindMemory(to: CChar.self).baseAddress!)
             }
-            let volName = withUnsafeBytes(of: fs.f_mntfromname) { ptr -> String in
-                String(cString: ptr.bindMemory(to: CChar.self).baseAddress!)
-            }
+            _ = withUnsafeBytes(of: fs.f_mntfromname) { _ in () }
 
             let blockSize = UInt64(fs.f_bsize)
             let total = UInt64(fs.f_blocks) * blockSize
@@ -173,12 +171,13 @@ final class DiskReader: BaseReader<DiskStats> {
             let pid = pids[i]
             guard pid > 0 else { continue }
 
-            var info = proc_taskinfo()
-            let size = Int32(MemoryLayout<proc_taskinfo>.size)
-            guard proc_pidinfo(pid, PROC_PIDTASKINFO, 0, &info, size) > 0 else { continue }
+            var ruinfo = rusage_info_v4()
+            guard withUnsafeMutablePointer(to: &ruinfo, {
+                proc_pid_rusage(pid, RUSAGE_INFO_V4, UnsafeMutableRawPointer($0))
+            }) == 0 else { continue }
 
-            let read  = info.pti_diskio_bytesread
-            let write = info.pti_diskio_byteswritten
+            let read  = ruinfo.ri_diskio_bytesread
+            let write = ruinfo.ri_diskio_byteswritten
             guard read + write > 0 else { continue }
 
             var nameBuffer = [CChar](repeating: 0, count: Int(MAXCOMLEN) + 1)

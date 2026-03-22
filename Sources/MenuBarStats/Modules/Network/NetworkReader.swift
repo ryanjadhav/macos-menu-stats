@@ -242,9 +242,11 @@ final class NetworkReader: BaseReader<NetworkStats> {
             guard pid > 0 else { continue }
 
             var ruinfo = rusage_info_v4()
-            guard withUnsafeMutablePointer(to: &ruinfo, {
-                proc_pid_rusage(pid, RUSAGE_INFO_V4, UnsafeMutableRawPointer($0))
-            }) == 0 else { continue }
+            let ret: Int32 = withUnsafeMutablePointer(to: &ruinfo) { ptr in
+                var voidPtr: rusage_info_t? = UnsafeMutableRawPointer(ptr)
+                return proc_pid_rusage(pid, RUSAGE_INFO_V4, &voidPtr)
+            }
+            guard ret == 0 else { continue }
 
             // Use cumulative disk I/O as a proxy for process activity
             // (per-process network I/O is not available via public APIs)

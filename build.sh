@@ -14,4 +14,7 @@ mkdir -p "${APP_BUNDLE}/Contents/Resources"
 cp "${BUILD_DIR}/${APP_NAME}"  "${APP_BUNDLE}/Contents/MacOS/${APP_NAME}"
 cp "Resources/Info.plist"      "${APP_BUNDLE}/Contents/Info.plist"
 
+echo "Signing ${APP_NAME}.app (ad-hoc)..."
+codesign --force --deep --sign - "${APP_BUNDLE}"
+
 echo "Done: ${APP_BUNDLE}"

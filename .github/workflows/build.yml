@@ -22,9 +22,12 @@ jobs:
       - name: Test
         run: swift test -v
 
+      - name: Package app (ditto preserves symlinks and executable bits)
+        run: ditto -c -k --sequesterRsrc --keepParent .build/release/MenuBarStats.app MenuBarStats.zip
+
       - name: Upload app bundle
         uses: actions/upload-artifact@v4
         with:
-          name: MenuBarStats.app
-          path: .build/release/MenuBarStats.app
+          name: MenuBarStats
+          path: MenuBarStats.zip
           if-no-files-found: error

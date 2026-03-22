@@ -38,7 +38,7 @@ No Xcode GUI needed — only Xcode Command Line Tools (`xcode-select --install`)
 Build and assemble a proper `.app` bundle in one step:
 
 ```bash
-make
+bash build.sh
 ```
 
 The bundle is placed at:
@@ -69,11 +69,9 @@ swift build
 .build/debug/MenuBarStats
 ```
 
-### Clean
+### CI
 
-```bash
-make clean
-```
+A GitHub Actions workflow (`.github/workflows/build.yml`) runs `build.sh` on every push and pull request using a macOS 15 runner. The assembled `MenuBarStats.app` is uploaded as a workflow artifact on each successful build.
 
 ## Project Structure
 

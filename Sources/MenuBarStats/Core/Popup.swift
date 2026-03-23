@@ -5,6 +5,9 @@ import SwiftUI
 /// Uses NSPanel with .nonactivatingPanel so clicking the popup never
 /// steals focus from the frontmost application.
 class BasePopup: NSPanel {
+    /// Tracks the currently visible popup so opening a new one closes the old one.
+    private static weak var current: BasePopup?
+
     private var eventMonitor: Any?
 
     init(contentView: NSView) {
@@ -24,6 +27,12 @@ class BasePopup: NSPanel {
     }
 
     func show(relativeTo button: NSStatusBarButton) {
+        // Close whichever other popup is currently open.
+        if let previous = BasePopup.current, previous !== self {
+            previous.hide()
+        }
+        BasePopup.current = self
+
         guard let buttonWindow = button.window else { return }
         let buttonFrame = buttonWindow.convertToScreen(button.frame)
 
@@ -42,6 +51,9 @@ class BasePopup: NSPanel {
     func hide() {
         orderOut(nil)
         stopEventMonitor()
+        if BasePopup.current === self {
+            BasePopup.current = nil
+        }
     }
 
     func toggle(relativeTo button: NSStatusBarButton) {

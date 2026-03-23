@@ -4,6 +4,7 @@ import ServiceManagement
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var modules: [any SystemModule] = []
     private var settingsWindowController: SettingsWindowController?
+    private var settingsStatusItem: SettingsStatusItem?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Run as menu bar only app — no Dock icon
@@ -27,6 +28,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 module.enable()
             }
         }
+
+        // Gear icon — always visible, rightmost item
+        settingsStatusItem = SettingsStatusItem()
     }
 
     func applicationWillTerminate(_ notification: Notification) {
